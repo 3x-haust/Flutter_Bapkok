@@ -1,6 +1,5 @@
 import 'package:bapkok/pages/main/MealPage.dart';
 import 'package:bapkok/pages/main/SettingPage.dart';
-import 'package:bapkok/widgets/MyAppBar.dart';
 import 'package:bapkok/widgets/MyBottomNavigationBar.dart';
 import 'package:flutter/material.dart';
 
@@ -22,12 +21,6 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: PreferredSize(
-      //   preferredSize: const Size.fromHeight(kToolbarHeight),
-      //   child: MyAppBar(
-      //     currentIndex: _currentIndex
-      //   ),
-      // ),
       body: pages[_currentIndex],
       bottomNavigationBar: MyBottomNavigationBar(
         currentIndex: _currentIndex,
