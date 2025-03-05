@@ -154,10 +154,8 @@ class AlarmController extends GetxController {
         var when = tz.TZDateTime(
             tz.local, now.year, now.month, now.day, hour, min, sec);
         if (when.isBefore(now)) {
-          print(when.add(const Duration(minutes: 1)));
           return when.add(const Duration(minutes: 1));
         } else {
-          print(when);
           return when;
         }
       }

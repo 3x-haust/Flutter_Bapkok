@@ -7,15 +7,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_getx_widget.dart';
 import 'package:shimmer/shimmer.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   SettingPageState createState() => SettingPageState();
 }
 
@@ -100,33 +97,7 @@ class SettingPageState extends State<SettingPage> {
 
   Widget _buildAlarmCard(String id) {
     return GestureDetector(
-      onLongPress: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('알림 삭제'),
-              content: const Text('이 알림을 삭제하시겠습니까?'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('취소'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    alarmController.deleteAlarm(id);
-                    setState(() {});
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('삭제'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      onTap: () => _showEditAlarmBottomSheet(id),
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFD9DBFF),
@@ -550,6 +521,7 @@ class SettingPageState extends State<SettingPage> {
   ) {
     _searchController.text = textEditingController.text;
     _autocompleteController = textEditingController;
+    textEditingController.text = schoolController.selectedSchool.value;
 
     return TextField(
       controller: textEditingController,
@@ -605,8 +577,186 @@ class SettingPageState extends State<SettingPage> {
       color: const Color.fromRGBO(108, 121, 139, 0.50),
     );
   }
-}
 
+  void _showEditAlarmBottomSheet(String id) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFF6F6F6),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+        maxWidth: min(MediaQuery.of(context).size.width, 600),
+      ),
+      builder: (BuildContext context) => _buildEditAlarmBottomSheet(id),
+    );
+  }
+
+  Widget _buildEditAlarmBottomSheet(String id) {
+      var currentAlarm = alarmController.alarms[id];
+      String selectedMealType = currentAlarm['mealType'];
+      List<String> timeParts = currentAlarm['time'].split(':');
+      int hour = int.parse(timeParts[0]);
+      int minute = int.parse(timeParts[1]);
+      DateTime selectedTime = DateTime(0, 1, 1, hour, minute);
+      TextEditingController editAutocompleteController =
+          TextEditingController(text: currentAlarm['schoolName']);
+  
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    alarmController.deleteAlarm(id);
+                    Get.back();
+                  },
+                  child: const Text(
+                    '삭제',
+                    style: TextStyle(
+                      color: Color(0xFFD54040),
+                      fontSize: 20,
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const Text(
+                  '알람 수정',
+                  style: TextStyle(
+                    color: Color(0xFF101012),
+                    fontSize: 24,
+                    fontFamily: 'Pretendard',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    if (editAutocompleteController.text.isNotEmpty &&
+                        schoolController.allSchoolNames
+                            .contains(editAutocompleteController.text)) {
+                      alarmController.setAlarm(id, {
+                        'time':
+                            '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                        'status': currentAlarm['status'],
+                        'mealType': selectedMealType,
+                        'schoolName': editAutocompleteController.text,
+                      });
+                      Get.back();
+                    }
+                  },
+                  child: const Text(
+                    '저장',
+                    style: TextStyle(
+                      color: Color(0xFF636CFF),
+                      fontSize: 20,
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+            _buildDivider(),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: MediaQuery.of(context).size.width - 130,
+                  height: 50,
+                  decoration: _searchFieldDecoration,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Autocomplete<String>(
+                      optionsBuilder: _optionsBuilder,
+                      onSelected: (String selection) {
+                        editAutocompleteController.text = selection;
+                      },
+                      fieldViewBuilder: (context, textEditingController,
+                          focusNode, onFieldSubmitted) {
+                        textEditingController.text = currentAlarm['schoolName'];
+                        return TextField(
+                          controller: textEditingController,
+                          focusNode: focusNode,
+                          cursorColor: Colors.black,
+                          textAlignVertical: TextAlignVertical.center,
+                          decoration: const InputDecoration(
+                            hintText: "학교를 입력하세요.",
+                            hintStyle: TextStyle(
+                              color: Color(0xFFCCCCCC),
+                              fontSize: 16,
+                              fontFamily: 'Pretendard',
+                              fontWeight: FontWeight.w600,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                        );
+                      },
+                      optionsViewBuilder: _buildOptionsView,
+                    ),
+                  ),
+                ),
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return DropdownButton<String>(
+                      value: selectedMealType,
+                      icon: Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: SvgPicture.asset('assets/svgs/arrow_down.svg'),
+                      ),
+                      elevation: 16,
+                      dropdownColor: Colors.white,
+                      style: TextStyle(
+                        color: const Color(0xFF8F98A8),
+                        fontSize: MediaQuery.of(context).size.width * 0.045,
+                        fontFamily: 'Pretendard',
+                        fontWeight: FontWeight.w600,
+                      ),
+                      underline: Container(height: 0),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedMealType = newValue!;
+                        });
+                      },
+                      items: ['조식', '중식', '석식']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+            _buildDivider(),
+            const SizedBox(height: 15),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.3,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                initialDateTime: selectedTime,
+                onDateTimeChanged: (DateTime time) {
+                  selectedTime = time;
+                },
+              ),
+            ),
+            const SizedBox(height: 15),
+            _buildDivider(),
+          ],
+        ),
+      );
+    }
+}
 class ShimmerContainer extends StatelessWidget {
   final double width;
   final double height;
